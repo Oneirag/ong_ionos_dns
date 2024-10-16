@@ -1,0 +1,4 @@
+httpx
+ong_utils
+# To work in supervisor, this library is needed
+keyrings.alt
