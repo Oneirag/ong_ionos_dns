@@ -1,12 +1,64 @@
+import sys
 from datetime import datetime, timedelta
-
+from pathlib import Path
 import httpx
 import time
-from ong_utils import InternalStorage
+from ong_ionos_dns import storage
+import logging
+import logging.handlers
 
-storage = InternalStorage("ong_ionos_dns")
+
+def setup_logger(name='my_app', log_file='app.log'):
+    """
+    Configura un logger que escribe tanto en fichero como en consola
+
+    Args:
+        name (str): Nombre del logger
+        log_file (str): Ruta del fichero de log
+
+    Returns:
+        logging.Logger: Logger configurado
+    """
+    # Crear el directorio de logs si no existe
+    log_path = Path(log_file).parent
+    log_path.mkdir(parents=True, exist_ok=True)
+
+    # Crear y configurar el logger
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+
+    # Formato del log
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(module)s:%(lineno)d - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    # Handler para escribir en fichero con rotación
+    # 10MB = 10 * 1024 * 1024 bytes
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_file,
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=5,  # Mantener 5 archivos de backup
+        encoding='utf-8'
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+
+    # Handler para escribir en consola
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.DEBUG)
+    console_handler.setFormatter(formatter)
+
+    # Añadir los handlers al logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    return logger
+
+
 api_key = storage.get_value("API_KEY")
 if not api_key:
+    raise ValueError("No api key")
     api_key = input("Insert API_KEY:")
     storage.store_value("API_KEY", api_key)
     exit(0)
@@ -58,11 +110,16 @@ class DnsManager:
 
 
 def main(update_interval_seconds: int = None):
+    logger = setup_logger(__name__, Path(__file__).with_name("app.log").as_posix())
+    logger.info("starting process")
     dns = DnsManager()
     while True:
+        logger.info("Starting DNS update")
         dns.update()
         if update_interval_seconds:
-            print("Next execution at ", datetime.now() + timedelta(seconds=update_interval_seconds))
+            next_time = datetime.now() + timedelta(seconds=update_interval_seconds)
+            logger.info(f"Next execution at {next_time}")
+            # print(f"Next execution at {next_time}")
             time.sleep(update_interval_seconds)
         else:
             return
@@ -70,6 +127,5 @@ def main(update_interval_seconds: int = None):
 
 
 if __name__ == '__main__':
-    # main()
     main(5 * 60)
 
