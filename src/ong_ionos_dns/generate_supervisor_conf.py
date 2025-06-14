@@ -26,5 +26,5 @@ stdout_logfile_backups=0        # No backups
 stdout_capture_maxbytes=10      # 10mb maximum
 """
 print(template)
-Path(__file__).with_name("ionos_dns.conf").write_text(template)
+Path("ionos_dns.conf").write_text(template)
 

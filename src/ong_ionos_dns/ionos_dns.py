@@ -58,12 +58,8 @@ def setup_logger(name='my_app', log_file='app.log'):
 
 api_key = storage.get_value("API_KEY")
 if not api_key:
-    raise ValueError("No api key")
-    public_preffix = input("Insert API_KEY public preffix:")
-    secret = input("Insert API_KEY secret:")
-    api_key = f"{public_preffix}.{secret}"
-    storage.store_value("API_KEY", api_key)
-    exit(0)
+    raise ValueError("No api key. Setup api key in https://developer.hosting.ionos.es/keys and run "
+                     "ong_ionos_dns.config_api_key")
 
 def get_current_ip() -> str | None:
     try:
